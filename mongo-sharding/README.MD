@@ -5,7 +5,7 @@
 3. выполняем команду docker compose up -d
 4. инициализируем configSrv:
 docker exec -it configSrv mongosh --port 27017
-rs.initiate(
+> rs.initiate(
   {
     _id : "config_server",
        configsvr: true,
@@ -16,7 +16,7 @@ rs.initiate(
 );
 5. инициализируем шарды:
 docker exec -it shard1 mongosh --port 27018
-rs.initiate(
+> rs.initiate(
     {
       _id : "shard1",
       members: [
@@ -27,7 +27,7 @@ rs.initiate(
 > exit();
 
 docker exec -it shard2 mongosh --port 27019
-rs.initiate(
+> rs.initiate(
     {
       _id : "shard2",
       members: [
@@ -38,15 +38,15 @@ rs.initiate(
 > exit();
 6. инициализируем роутер и загружаем данные:
 docker exec -it mongos_router mongosh --port 27020
-sh.addShard( "shard1/shard1:27018");
-sh.addShard( "shard2/shard2:27019");
+> sh.addShard( "shard1/shard1:27018");
+> sh.addShard( "shard2/shard2:27019");
 
-sh.enableSharding("somedb");
-sh.shardCollection("somedb.helloDoc", { "name" : "hashed" } )
+> sh.enableSharding("somedb");
+> sh.shardCollection("somedb.helloDoc", { "name" : "hashed" } )
 
-use somedb
+> use somedb;
 
-for(var i = 0; i < 1000; i++) db.helloDoc.insert({age:i, name:"ly"+i})
+> for(var i = 0; i < 1000; i++) db.helloDoc.insert({age:i, name:"ly"+i})
 
 db.helloDoc.countDocuments()
 Получаем ответ: 1000
