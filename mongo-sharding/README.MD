@@ -1,8 +1,8 @@
-# Задание 2. Шардирование
-## Как запустить проект:
+Задание 2. Шардирование
+Как запустить проект:
 1. скачиваем папку mongo-sharding
 2. перемещаемся в директорию mongo-sharding
-3. выполняем команду shell```docker compose up -d```
+3. выполняем команду docker compose up -d
 4. инициализируем configSrv:
 docker exec -it configSrv mongosh --port 27017
 rs.initiate(
