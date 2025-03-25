@@ -16,7 +16,7 @@
   }
 );
 5. инициализируем шарды:
->docker exec -it shard1 mongosh --port 27018
+> docker exec -it shard1 mongosh --port 27018
 > rs.initiate(
     {
       _id : "shard1",
