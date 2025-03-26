@@ -37,10 +37,10 @@
 > sh.addShard( "shard2/shard2:27019");
 
 > sh.enableSharding("somedb");
-> sh.shardCollection("somedb.helloDoc", { "name" : "hashed" } )
-> use somedb
-> for(var i = 0; i < 1000; i++) db.helloDoc.insert({age:i, name:"ly"+i})
->db.helloDoc.countDocuments()
+> sh.shardCollection("somedb.helloDoc", { "name" : "hashed" } );
+> use somedb;
+> for(var i = 0; i < 1000; i++) db.helloDoc.insert({age:i, name:"ly"+i});
+> db.helloDoc.countDocuments();
 Ответ: 1000
 7. Проверка на шардах (shard1 и shard1-2)
 > docker exec -it shard1 mongosh --port 27018
