@@ -4,7 +4,7 @@
 2. перемещаемся в директорию mongo-sharding-repl
 3. выполняем команду
 > docker compose up -d
-4. инициализируем configSrv:
+4. Инициализация configSrv:
 > docker exec -it configSrv mongosh --port 27017
 > rs.initiate(
   {
@@ -15,52 +15,45 @@
     ]
   }
 );
-5. инициализируем шарды:
+5. Инициализация шардов:
 > docker exec -it shard1 mongosh --port 27018
-> rs.initiate(
-    {
-      _id : "shard1",
-      members: [
-        { _id : 0, host : "shard1:27018" },
-      ]
-    }
-);
+> rs.initiate({_id: "shard1", members: [
+{_id: 0, host: "shard1:27018"},
+{_id: 1, host: "shard1-2:27018"},
+{_id: 2, host: "shard1-3:27018"}
+]})
 > exit();
 
 > docker exec -it shard2 mongosh --port 27019
-> rs.initiate(
-    {
-      _id : "shard2",
-      members: [
-        { _id : 1, host : "shard2:27019" }
-      ]
-    }
-  );
+> rs.initiate({_id: "shard2", members: [
+{_id: 0, host: "shard2:27019"},
+{_id: 1, host: "shard2-2:27019"},
+{_id: 2, host: "shard2-3:27019"}
+]})
 > exit();
-6. инициализируем роутер и загружаем данные:
+6. Инициализация роутера
 > docker exec -it mongos_router mongosh --port 27020
 > sh.addShard( "shard1/shard1:27018");
 > sh.addShard( "shard2/shard2:27019");
 
 > sh.enableSharding("somedb");
 > sh.shardCollection("somedb.helloDoc", { "name" : "hashed" } )
-
-> use somedb;
-
-> for(var i = 0; i < 1000; i++) db.helloDoc.insert({age:i, name:"ly"+i});
-
-> db.helloDoc.countDocuments();
-> exit();
-Получаем ответ: 1000
-7. проверяем как данные распределены на шардах:
+> use somedb
+> for(var i = 0; i < 1000; i++) db.helloDoc.insert({age:i, name:"ly"+i})
+>db.helloDoc.countDocuments()
+Ответ: 1000
+7. Проверка на шардах (shard1 и shard1-2)
 > docker exec -it shard1 mongosh --port 27018
 > use somedb;
 > db.helloDoc.countDocuments();
-> exit();
+Ответ: 492
+
+> docker exec -it shard1-2 mongosh --port 27018
+> use somedb;
+> db.helloDoc.countDocuments();
 Ответ: 492
 
 > docker exec -it shard2 mongosh --port 27019
 > use somedb;
 > db.helloDoc.countDocuments();
-> exit();
 Ответ: 508
