@@ -64,4 +64,4 @@ for(var i = 0; i < 1000; i++) db.helloDoc.insertOne({age:i, name:"ly"+i})
 
 8. В браузере переходим на http://localhost:8080/
 получаем ответ: 
-> "{"mongo_topology_type":"Sharded","mongo_replicaset_name":null,"mongo_db":"somedb","read_preference":"Primary()","mongo_nodes":[["mongos_router",27020]],"mongo_primary_host":null,"mongo_secondary_hosts":[],"mongo_address":["mongos_router",27020],"mongo_is_primary":true,"mongo_is_mongos":true,"collections":{"helloDoc":{"documents_count":1000}},"shards":{"shard1":"shard1/shard1:27018,shard1-2:27018,shard1-3:27018","shard2":"shard2/shard2:27019,shard2-2:27019,shard2-3:27019"},"cache_enabled":false,"status":"OK"}"
+>{"mongo_topology_type":"Sharded","mongo_replicaset_name":null,"mongo_db":"somedb","read_preference":"Primary()","mongo_nodes":[["mongos_router",27020]],"mongo_primary_host":null,"mongo_secondary_hosts":[],"mongo_address":["mongos_router",27020],"mongo_is_primary":true,"mongo_is_mongos":true,"collections":{"helloDoc":{"documents_count":1000}},"shards":{"shard1":"shard1/shard1:27018,shard1-2:27018,shard1-3:27018","shard2":"shard2/shard2:27019,shard2-2:27019,shard2-3:27019"},"cache_enabled":false,"status":"OK"}"
