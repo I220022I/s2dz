@@ -1,240 +1,56 @@
-services:
-  pymongo_api:
-    container_name: pymongo_api
-    build:
-      context: api_app
-      dockerfile: Dockerfile
-    image: kazhem/pymongo_api:1.0.0
-    depends_on:
-      - mongos_router
-    ports:
-      - 8080:8080
-    networks:
-      - app-network
-    environment:
-      MONGODB_URL: "mongodb://mongos_router:27020"
-      MONGODB_DATABASE_NAME: "somedb"
+- [ ] Инициализация configSrv:
+docker exec -it configSrv mongosh --port 27017
+rs.initiate(
+  {
+    _id : "config_server",
+       configsvr: true,
+    members: [
+      { _id : 0, host : "configSrv:27017" }
+    ]
+  }
+);
+- [ ] Инициализация шардов:
+docker exec -it shard1 mongosh --port 27018
+rs.initiate({_id: "shard1", members: [
+{_id: 0, host: "shard1:27018"},
+{_id: 1, host: "shard1-2:27018"},
+{_id: 2, host: "shard1-3:27018"}
+]});
+> exit();
 
-  configSrv:
-    container_name: configSrv
-    image: mongo:latest
-    restart: always
-    ports:
-      - "27017:27017"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.10
-    volumes:
-      - config-data:/data/db
-    command:
-      [
-        "--configsvr",
-        "--replSet",
-        "config_server",
-        "--bind_ip_all",
-        "--port",
-        "27017"
-      ] 
-    healthcheck:
-      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
-      interval: 5s
-      start_period: 10s
+docker exec -it shard2 mongosh --port 27019
+rs.initiate({_id: "shard2", members: [
+{_id: 0, host: "shard2:27019"},
+{_id: 1, host: "shard2-2:27019"},
+{_id: 2, host: "shard2-3:27019"}
+]});
+> exit();
+- [ ] Инициализация роутера
+docker exec -it mongos_router mongosh --port 27020
+sh.addShard( "shard1/shard1:27018");
+sh.addShard( "shard2/shard2:27019");
 
-  shard1:
-    container_name: shard1
-    image: mongo:latest
-    restart: always
-    ports:
-      - "27018:27018"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.9
-    volumes:
-      - shard1-data:/data/db
-    command:
-      [
-        "--shardsvr",
-        "--replSet",
-        "shard1",
-        "--bind_ip_all",
-        "--port",
-        "27018"
-      ]
-    healthcheck:
-      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
-      interval: 5s
-      start_period: 10s
+sh.enableSharding("somedb");
+sh.shardCollection("somedb.helloDoc", { "name" : "hashed" } )
 
-  shard1-2:
-    container_name: shard1-2
-    image: mongo:latest
-    restart: always
-    ports:
-      - "27028:27018"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.19
-    volumes:
-      - shard1-2-data:/data/db
-    command:
-      [
-        "--shardsvr",
-        "--replSet",
-        "shard1",
-        "--bind_ip_all",
-        "--port",
-        "27018"
-      ]
-    depends_on:
-      - shard1
-    healthcheck:
-      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
-      interval: 5s
-      start_period: 10s
+use somedb
 
-  shard1-3:
-    container_name: shard1-3
-    image: mongo:latest
-    restart: always
-    ports:
-      - "27038:27018"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.29
-    volumes:
-      - shard1-3-data:/data/db
-    command:
-      [
-        "--shardsvr",
-        "--replSet",
-        "shard1",
-        "--bind_ip_all",
-        "--port",
-        "27018"
-      ]
-    depends_on:
-      - shard1
-    healthcheck:
-      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
-      interval: 5s
-      start_period: 10s
+for(var i = 0; i < 1000; i++) db.helloDoc.insertOne({age:i, name:"ly"+i})
 
-  shard2:
-    container_name: shard2
-    image: mongo:latest
-    restart: always
-    ports:
-      - "27019:27019"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.8
-    volumes:
-      - shard2-data:/data/db
-    command:
-      [
-        "--shardsvr",
-        "--replSet",
-        "shard2",
-        "--bind_ip_all",
-        "--port",
-        "27019"
-      ]
-    healthcheck:
-      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
-      interval: 5s
-      start_period: 10s
+db.helloDoc.countDocuments()
+Ответ: 1000
+- [ ] Проверка на шардах (shard1 и shard1-2)
+docker exec -it shard1 mongosh --port 27018
+use somedb;
+db.helloDoc.countDocuments();
+Ответ: 492
 
-  shard2-2:
-    container_name: shard2-2
-    image: mongo:latest
-    restart: always
-    ports:
-      - "27029:27019"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.18
-    volumes:
-      - shard2-2-data:/data/db
-    command:
-      [
-        "--shardsvr",
-        "--replSet",
-        "shard2",
-        "--bind_ip_all",
-        "--port",
-        "27019"
-      ]
-    depends_on:
-      - shard2
-    healthcheck:
-      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
-      interval: 5s
-      start_period: 10s
+docker exec -it shard1-2 mongosh --port 27018
+use somedb;
+db.helloDoc.countDocuments();
+Ответ: 492
 
-  shard2-3:
-    container_name: shard2-3
-    image: mongo:latest
-    restart: always
-    ports:
-      - "27039:27019"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.28
-    volumes:
-      - shard2-3-data:/data/db
-    command:
-      [
-        "--shardsvr",
-        "--replSet",
-        "shard2",
-        "--bind_ip_all",
-        "--port",
-        "27019"
-      ]
-    depends_on:
-      - shard2
-    healthcheck:
-      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
-      interval: 5s
-      start_period: 10s
-
-  mongos_router:
-    container_name: mongos_router
-    image: mongo:latest
-    restart: always
-    ports:
-      - "27020:27020"
-    networks:
-      app-network:
-        ipv4_address: 173.17.0.7
-    command:
-      [
-        "mongos",
-        "--configdb",
-        "config_server/configSrv:27017",
-        "--bind_ip_all",
-        "--port",
-        "27020"
-      ]
-    healthcheck:
-      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
-      interval: 5s
-      start_period: 10s
-
-networks:
-  app-network:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 173.17.0.0/16
-
-volumes:
-  config-data:
-  shard1-data:
-  shard1-2-data:
-  shard1-3-data:
-  shard2-data:
-  shard2-2-data:
-  shard2-3-data:
-  
+docker exec -it shard2 mongosh --port 27019
+use somedb;
+db.helloDoc.countDocuments();
+Ответ: 508
